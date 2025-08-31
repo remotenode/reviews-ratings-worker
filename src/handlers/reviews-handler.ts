@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Env, ReviewsRequest, ReviewsResponse, ErrorResponse } from '../types';
-import { ASOMarketService } from '../services/aso-market-service';
+import { AppStoreService } from '../services/app-store-service';
 import { Validators } from '../utils/validators';
 import { ErrorHandler } from '../utils/error-handler';
 import { Logger } from '../utils/logger';
 
 export class ReviewsHandler {
-  private asoMarketService: ASOMarketService;
+  private appStoreService: AppStoreService;
 
   constructor(private env: Env) {
-    this.asoMarketService = new ASOMarketService(env);
+    this.appStoreService = new AppStoreService(env);
   }
 
   /**
@@ -21,11 +21,13 @@ export class ReviewsHandler {
       const appId = url.searchParams.get('app_id');
       const limit = url.searchParams.get('limit');
       const includeMetadata = url.searchParams.get('include_metadata') !== 'false';
+      const country = url.searchParams.get('country') || 'us';
 
       const requestData: ReviewsRequest = {
         app_id: appId || '',
         limit: limit ? parseInt(limit) : undefined,
-        include_metadata: includeMetadata
+        include_metadata: includeMetadata,
+        country
       };
 
       return await this.processSingleAppRequest(requestData);
@@ -83,7 +85,7 @@ export class ReviewsHandler {
 
       if (requestData.include_metadata) {
         // Get both metadata and reviews
-        const { metadata, reviews } = await this.asoMarketService.getAppWithReviews(appId, limit);
+        const { metadata, reviews } = await this.appStoreService.getAppWithReviews(appId, limit, requestData.country);
         response = {
           app_id: appId,
           app_metadata: metadata,
@@ -93,7 +95,7 @@ export class ReviewsHandler {
         };
       } else {
         // Get only reviews
-        const reviews = await this.asoMarketService.getReviews(appId, limit);
+        const reviews = await this.appStoreService.getReviews(appId, limit, requestData.country);
         response = {
           app_id: appId,
           reviews,
