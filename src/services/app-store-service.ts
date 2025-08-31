@@ -76,7 +76,7 @@ export class AppStoreService {
       ];
       
       const allReviews: AppStoreReview[] = [];
-      const reviewIds = new Set<string>(); // To track unique reviews
+      const reviewMap = new Map<string, AppStoreReview>(); // To track unique reviews and their types
       
       for (const sortBy of sortOptions) {
         try {
@@ -111,19 +111,26 @@ export class AppStoreService {
             const reviewDate = review.updated?.label || '';
             const uniqueId = `${reviewContent.substring(0, 50)}_${reviewAuthor}_${reviewDate}`;
             
-            if (!reviewIds.has(uniqueId)) {
-              reviewIds.add(uniqueId);
-              
-              allReviews.push({
-                id: `appstore_${appId}_${sortBy}_${allReviews.length}`,
+            if (reviewMap.has(uniqueId)) {
+              // Review already exists, add this sorting type to it
+              const existingReview = reviewMap.get(uniqueId)!;
+              if (!existingReview.review_types.includes(sortBy)) {
+                existingReview.review_types.push(sortBy);
+              }
+            } else {
+              // New review, create it with this sorting type
+              const newReview: AppStoreReview = {
+                id: `appstore_${appId}_${sortBy}_${reviewMap.size}`,
                 rating: parseInt(review['im:rating']?.label || '0'),
                 title: review.title?.label || '',
                 content: reviewContent,
                 author: reviewAuthor,
                 date: reviewDate,
                 helpful_votes: parseInt(review['im:voteSum']?.label || '0'),
-                app_id: appId
-              });
+                app_id: appId,
+                review_types: [sortBy]
+              };
+              reviewMap.set(uniqueId, newReview);
             }
           }
           
@@ -139,13 +146,13 @@ export class AppStoreService {
         }
       }
       
-      // Sort by date (most recent first) - return all available reviews
-      const sortedReviews = allReviews
+      // Convert map values to array and sort by date (most recent first) - return all available reviews
+      const sortedReviews = Array.from(reviewMap.values())
         .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
       
       Logger.info('Successfully fetched combined App Store reviews', 'APP_STORE', { 
         app_id: appId, 
-        total_found: allReviews.length,
+        total_found: reviewMap.size,
         reviews_count: sortedReviews.length,
         sort_options_used: sortOptions.length
       });

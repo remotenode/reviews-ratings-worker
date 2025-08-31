@@ -291,7 +291,7 @@
     },
       "AppStoreReview": {
         "type": "object",
-        "required": ["id", "rating", "title", "content", "author", "date", "app_id"],
+        "required": ["id", "rating", "title", "content", "author", "date", "app_id", "review_types"],
         "properties": {
           "id": {
             "type": "string",
@@ -328,6 +328,14 @@
           "app_id": {
             "type": "string",
             "description": "App Store app ID"
+          },
+          "review_types": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": ["mostRecent", "mostHelpful", "mostFavorable", "mostCritical"]
+            },
+            "description": "Array of sorting methods this review appears in (can be multiple if review appears in different categories)"
           }
         }
       },

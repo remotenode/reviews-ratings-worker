@@ -31,6 +31,7 @@ export interface AppStoreReview {
   date: string;
   helpful_votes?: number;
   app_id: string;
+  review_types: string[]; // Array of sorting methods this review appears in
 }
 
 export interface ReviewsRequest {
