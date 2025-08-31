@@ -61,53 +61,97 @@ export class AppStoreService {
   }
 
   /**
-   * Get recent reviews from App Store using iTunes RSS feed
+   * Get recent reviews from App Store using iTunes RSS feed with multiple sorting options
    */
   async getReviews(appId: string, limit: number = 3, country: string = 'us'): Promise<AppStoreReview[]> {
     try {
-      Logger.info('Fetching App Store reviews', 'APP_STORE', { app_id: appId, limit, country });
+      Logger.info('Fetching App Store reviews with multiple sorting options', 'APP_STORE', { app_id: appId, limit, country });
       
-      // Use iTunes RSS feed for reviews with country support
-      const rssUrl = `https://itunes.apple.com/${country}/rss/customerreviews/id=${appId}/sortBy=mostRecent/json`;
-      const response = await fetch(rssUrl, {
-        signal: AbortSignal.timeout(parseInt(this.env.REQUEST_TIMEOUT_MS))
-      });
+      // Define sorting options to get more comprehensive reviews
+      const sortOptions = [
+        'mostRecent',
+        'mostHelpful', 
+        'mostFavorable',
+        'mostCritical'
+      ];
       
-      if (!response.ok) {
-        Logger.warn('Failed to fetch App Store RSS feed', 'APP_STORE', { 
-          app_id: appId, 
-          status: response.status 
-        });
-        return [];
+      const allReviews: AppStoreReview[] = [];
+      const reviewIds = new Set<string>(); // To track unique reviews
+      
+      for (const sortBy of sortOptions) {
+        try {
+          const rssUrl = `https://itunes.apple.com/${country}/rss/customerreviews/id=${appId}/sortBy=${sortBy}/json`;
+          const response = await fetch(rssUrl, {
+            signal: AbortSignal.timeout(parseInt(this.env.REQUEST_TIMEOUT_MS))
+          });
+          
+          if (!response.ok) {
+            Logger.warn(`Failed to fetch ${sortBy} reviews`, 'APP_STORE', { 
+              app_id: appId, 
+              sortBy,
+              status: response.status 
+            });
+            continue;
+          }
+          
+          const data = await response.json() as any;
+          
+          if (!data.feed || !data.feed.entry || !Array.isArray(data.feed.entry)) {
+            Logger.warn(`Invalid RSS feed format for ${sortBy}`, 'APP_STORE', { app_id: appId, sortBy });
+            continue;
+          }
+          
+          // Skip the first entry as it's usually app metadata
+          const reviews = data.feed.entry.slice(1, 50); // Get all available reviews (max 49)
+          
+          for (const review of reviews) {
+            // Create a unique ID based on content to avoid duplicates
+            const reviewContent = review.content?.label || '';
+            const reviewAuthor = review.author?.name?.label || '';
+            const reviewDate = review.updated?.label || '';
+            const uniqueId = `${reviewContent.substring(0, 50)}_${reviewAuthor}_${reviewDate}`;
+            
+            if (!reviewIds.has(uniqueId)) {
+              reviewIds.add(uniqueId);
+              
+              allReviews.push({
+                id: `appstore_${appId}_${sortBy}_${allReviews.length}`,
+                rating: parseInt(review['im:rating']?.label || '0'),
+                title: review.title?.label || '',
+                content: reviewContent,
+                author: reviewAuthor,
+                date: reviewDate,
+                helpful_votes: parseInt(review['im:voteSum']?.label || '0'),
+                app_id: appId
+              });
+            }
+          }
+          
+          Logger.info(`Successfully fetched ${sortBy} reviews`, 'APP_STORE', { 
+            app_id: appId, 
+            sortBy,
+            reviews_count: reviews.length 
+          });
+          
+        } catch (error) {
+          Logger.error(`Failed to fetch ${sortBy} reviews`, 'APP_STORE', { app_id: appId, sortBy }, error as Error);
+          continue;
+        }
       }
       
-      const data = await response.json() as any;
+      // Sort by date (most recent first) and limit to requested amount
+      const sortedReviews = allReviews
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        .slice(0, limit);
       
-      if (!data.feed || !data.feed.entry || !Array.isArray(data.feed.entry)) {
-        Logger.warn('Invalid RSS feed format', 'APP_STORE', { app_id: appId });
-        return [];
-      }
-      
-      // Skip the first entry as it's usually app metadata
-      const reviews = data.feed.entry.slice(1, limit + 1);
-      
-      const formattedReviews: AppStoreReview[] = reviews.map((review: any, index: number) => ({
-        id: `appstore_${appId}_${index}`,
-        rating: parseInt(review['im:rating']?.label || '0'),
-        title: review.title?.label || '',
-        content: review.content?.label || '',
-        author: review.author?.name?.label || 'Anonymous',
-        date: review.updated?.label || new Date().toISOString(),
-        helpful_votes: parseInt(review['im:voteSum']?.label || '0'),
-        app_id: appId
-      }));
-      
-      Logger.info('Successfully fetched App Store reviews', 'APP_STORE', { 
+      Logger.info('Successfully fetched combined App Store reviews', 'APP_STORE', { 
         app_id: appId, 
-        reviews_count: formattedReviews.length 
+        total_found: allReviews.length,
+        reviews_count: sortedReviews.length,
+        sort_options_used: sortOptions.length
       });
       
-      return formattedReviews;
+      return sortedReviews;
     } catch (error) {
       Logger.error('Failed to get App Store reviews', 'APP_STORE', { app_id: appId }, error as Error);
       return [];
