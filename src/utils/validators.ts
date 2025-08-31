@@ -17,9 +17,7 @@ export class Validators {
       errors.push('app_id must be a valid numeric string');
     }
 
-    if (data.limit !== undefined && !this.isValidLimit(data.limit)) {
-      errors.push('limit must be a positive integer between 1 and 200');
-    }
+
 
     return {
       isValid: errors.length === 0,

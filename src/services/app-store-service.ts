@@ -61,11 +61,11 @@ export class AppStoreService {
   }
 
   /**
-   * Get recent reviews from App Store using iTunes RSS feed with multiple sorting options
+   * Get all available reviews from App Store using iTunes RSS feed with multiple sorting options
    */
-  async getReviews(appId: string, limit: number = 3, country: string = 'us'): Promise<AppStoreReview[]> {
+  async getReviews(appId: string, country: string = 'us'): Promise<AppStoreReview[]> {
     try {
-      Logger.info('Fetching App Store reviews with multiple sorting options', 'APP_STORE', { app_id: appId, limit, country });
+      Logger.info('Fetching App Store reviews with multiple sorting options', 'APP_STORE', { app_id: appId, country });
       
       // Define sorting options to get more comprehensive reviews
       const sortOptions = [
@@ -139,10 +139,9 @@ export class AppStoreService {
         }
       }
       
-      // Sort by date (most recent first) and limit to requested amount
+      // Sort by date (most recent first) - return all available reviews
       const sortedReviews = allReviews
-        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-        .slice(0, limit);
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
       
       Logger.info('Successfully fetched combined App Store reviews', 'APP_STORE', { 
         app_id: appId, 
@@ -161,17 +160,17 @@ export class AppStoreService {
   /**
    * Get app metadata and reviews in one call
    */
-  async getAppWithReviews(appId: string, limit: number = 3, country: string = 'us'): Promise<{
+  async getAppWithReviews(appId: string, country: string = 'us'): Promise<{
     metadata: AppStoreApp;
     reviews: AppStoreReview[];
   }> {
     try {
-      Logger.info('Fetching app with reviews', 'APP_STORE', { app_id: appId, limit, country });
+      Logger.info('Fetching app with reviews', 'APP_STORE', { app_id: appId, country });
       
       // Fetch metadata and reviews in parallel
       const [metadata, reviews] = await Promise.all([
         this.getAppMetadata(appId),
-        this.getReviews(appId, limit, country)
+        this.getReviews(appId, country)
       ]);
 
       Logger.info('Successfully fetched app with reviews', 'APP_STORE', { 

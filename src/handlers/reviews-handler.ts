@@ -19,13 +19,11 @@ export class ReviewsHandler {
     try {
       const url = new URL(request.url);
       const appId = url.searchParams.get('app_id');
-      const limit = url.searchParams.get('limit');
       const includeMetadata = url.searchParams.get('include_metadata') !== 'false';
       const country = url.searchParams.get('country') || 'us';
 
       const requestData: ReviewsRequest = {
         app_id: appId || '',
-        limit: limit ? parseInt(limit) : undefined,
         include_metadata: includeMetadata,
         country
       };
@@ -70,14 +68,10 @@ export class ReviewsHandler {
 
     // Sanitize inputs
     const appId = Validators.sanitizeAppId(requestData.app_id);
-    const limit = requestData.limit ? 
-      Validators.sanitizeLimit(requestData.limit, parseInt(this.env.MAX_REVIEWS_PER_APP)) : 
-      parseInt(this.env.MAX_REVIEWS_PER_APP);
 
     try {
       Logger.info('Processing single app reviews request', 'REVIEWS_HANDLER', { 
         app_id: appId, 
-        limit, 
         include_metadata: requestData.include_metadata 
       });
 
@@ -85,7 +79,7 @@ export class ReviewsHandler {
 
       if (requestData.include_metadata) {
         // Get both metadata and reviews
-        const { metadata, reviews } = await this.appStoreService.getAppWithReviews(appId, limit, requestData.country);
+        const { metadata, reviews } = await this.appStoreService.getAppWithReviews(appId, requestData.country);
         response = {
           app_id: appId,
           app_metadata: metadata,
@@ -95,7 +89,7 @@ export class ReviewsHandler {
         };
       } else {
         // Get only reviews
-        const reviews = await this.appStoreService.getReviews(appId, limit, requestData.country);
+        const reviews = await this.appStoreService.getReviews(appId, requestData.country);
         response = {
           app_id: appId,
           reviews,

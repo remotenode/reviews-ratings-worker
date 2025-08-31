@@ -35,7 +35,6 @@ export interface AppStoreReview {
 
 export interface ReviewsRequest {
   app_id: string;
-  limit?: number;
   include_metadata?: boolean;
   country?: string;
 }

@@ -55,8 +55,8 @@
     },
     "/api/reviews": {
       "get": {
-        "summary": "Get Single App Reviews",
-        "description": "Fetch reviews for a single app from the App Store",
+        "summary": "Get All Available App Reviews",
+                  "description": "Fetch all available reviews for a single app from the App Store using multiple sorting methods (mostRecent, mostHelpful, mostFavorable, mostCritical). Returns ~98 unique reviews with optional app metadata.",
         "operationId": "getSingleAppReviews",
         "tags": ["Reviews"],
         "parameters": [
@@ -71,19 +71,7 @@
               "example": "284882215"
             }
           },
-          {
-            "name": "limit",
-            "in": "query",
-            "description": "Number of reviews to fetch (1-200, default: 10)",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 200,
-              "default": 10,
-              "example": 5
-            }
-          },
+
           {
             "name": "include_metadata",
             "in": "query",
