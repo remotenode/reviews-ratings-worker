@@ -41,7 +41,9 @@ export class AppStoreService {
         reviews_count: app.userRatingCount || 0, // iTunes API doesn't separate ratings and reviews count
         url: `https://apps.apple.com/app/id${appId}`,
         platform: 'app_store',
-        last_updated: new Date().toISOString()
+        last_updated: new Date().toISOString(),
+        screenshotUrls: app.screenshotUrls || [],
+        ipadScreenshotUrls: app.ipadScreenshotUrls || []
       };
 
       Logger.info('Successfully fetched app metadata', 'APP_STORE', { 
@@ -61,12 +63,12 @@ export class AppStoreService {
   /**
    * Get recent reviews from App Store using iTunes RSS feed
    */
-  async getReviews(appId: string, limit: number = 3): Promise<AppStoreReview[]> {
+  async getReviews(appId: string, limit: number = 3, country: string = 'us'): Promise<AppStoreReview[]> {
     try {
-      Logger.info('Fetching App Store reviews', 'APP_STORE', { app_id: appId, limit });
+      Logger.info('Fetching App Store reviews', 'APP_STORE', { app_id: appId, limit, country });
       
-      // Use iTunes RSS feed for reviews
-      const rssUrl = `https://itunes.apple.com/us/rss/customerreviews/id=${appId}/sortBy=mostRecent/json`;
+      // Use iTunes RSS feed for reviews with country support
+      const rssUrl = `https://itunes.apple.com/${country}/rss/customerreviews/id=${appId}/sortBy=mostRecent/json`;
       const response = await fetch(rssUrl, {
         signal: AbortSignal.timeout(parseInt(this.env.REQUEST_TIMEOUT_MS))
       });
@@ -115,17 +117,17 @@ export class AppStoreService {
   /**
    * Get app metadata and reviews in one call
    */
-  async getAppWithReviews(appId: string, limit: number = 3): Promise<{
+  async getAppWithReviews(appId: string, limit: number = 3, country: string = 'us'): Promise<{
     metadata: AppStoreApp;
     reviews: AppStoreReview[];
   }> {
     try {
-      Logger.info('Fetching app with reviews', 'APP_STORE', { app_id: appId, limit });
+      Logger.info('Fetching app with reviews', 'APP_STORE', { app_id: appId, limit, country });
       
       // Fetch metadata and reviews in parallel
       const [metadata, reviews] = await Promise.all([
         this.getAppMetadata(appId),
-        this.getReviews(appId, limit)
+        this.getReviews(appId, limit, country)
       ]);
 
       Logger.info('Successfully fetched app with reviews', 'APP_STORE', { 
@@ -140,42 +142,4 @@ export class AppStoreService {
     }
   }
 
-  /**
-   * Get reviews for multiple apps
-   */
-  async getMultipleAppsReviews(
-    appIds: string[], 
-    limit: number = 3
-  ): Promise<Record<string, { metadata?: AppStoreApp; reviews: AppStoreReview[] }>> {
-    try {
-      Logger.info('Fetching reviews for multiple apps', 'APP_STORE', { 
-        app_count: appIds.length, 
-        limit 
-      });
-      
-      const results: Record<string, { metadata?: AppStoreApp; reviews: AppStoreReview[] }> = {};
-      
-      // Process apps sequentially to avoid rate limiting
-      for (const appId of appIds) {
-        try {
-          const { metadata, reviews } = await this.getAppWithReviews(appId, limit);
-          results[appId] = { metadata, reviews };
-        } catch (error) {
-          Logger.warn('Failed to get reviews for app', 'APP_STORE', { app_id: appId });
-          results[appId] = { reviews: [] };
-        }
-      }
-      
-      const successfulApps = Object.values(results).filter(r => r.reviews.length > 0).length;
-      Logger.info('Successfully fetched reviews for multiple apps', 'APP_STORE', { 
-        app_count: appIds.length,
-        successful: successfulApps
-      });
-      
-      return results;
-    } catch (error) {
-      Logger.error('Failed to get multiple apps reviews', 'APP_STORE', { app_count: appIds.length }, error as Error);
-      throw ErrorHandler.createError('Failed to get multiple apps reviews', error);
-    }
-  }
 }

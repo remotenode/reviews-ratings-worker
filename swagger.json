@@ -1,0 +1,420 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Reviews & Ratings API",
+    "description": "A Vercel-based API for fetching App Store reviews, ratings, and screenshots using the iTunes API. Supports country-specific reviews and includes iPhone and iPad screenshots.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "API Support",
+      "url": "https://ios.reviews.aso.market"
+    },
+    "license": {
+      "name": "ISC",
+      "url": "https://opensource.org/licenses/ISC"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://ios.reviews.aso.market",
+      "description": "Production server"
+    },
+    {
+      "url": "https://reviews-ratings-worker.vercel.app",
+      "description": "Legacy server"
+    },
+    {
+      "url": "http://localhost:3000",
+      "description": "Development server"
+    }
+  ],
+  "paths": {
+    "/api/health": {
+      "get": {
+        "summary": "Health Check",
+        "description": "Returns the health status of the API",
+        "operationId": "getHealth",
+        "tags": ["Health"],
+        "responses": {
+          "200": {
+            "description": "API is healthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                },
+                "example": {
+                  "status": "healthy",
+                  "timestamp": "2025-08-31T18:45:10.687Z",
+                  "service": "reviews-ratings-api"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/reviews": {
+      "get": {
+        "summary": "Get Single App Reviews",
+        "description": "Fetch reviews for a single app from the App Store",
+        "operationId": "getSingleAppReviews",
+        "tags": ["Reviews"],
+        "parameters": [
+          {
+            "name": "app_id",
+            "in": "query",
+            "description": "App Store app ID (numeric string)",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9]+$",
+              "example": "284882215"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Number of reviews to fetch (1-200, default: 10)",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 10,
+              "example": 5
+            }
+          },
+          {
+            "name": "include_metadata",
+            "in": "query",
+            "description": "Include app metadata (true/false, default: true)",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": true,
+              "example": true
+            }
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "description": "Country code for App Store (e.g., us, gb, ca, au, de, fr, jp)",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z]{2}$",
+              "default": "us",
+              "example": "gb"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved app reviews",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewsResponse"
+                },
+                "example": {
+                  "app_id": "284882215",
+                  "app_metadata": {
+                    "app_id": "284882215",
+                    "name": "Facebook",
+                    "rating": 4.50149,
+                    "rating_count": 22104128,
+                    "reviews_count": 22104128,
+                    "url": "https://apps.apple.com/app/id284882215",
+                    "platform": "app_store",
+                    "last_updated": "2025-08-31T18:45:19.245Z",
+                    "screenshotUrls": [
+                      "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource221/v4/fa/ab/b1/faabb115-0b12-7aa0-2781-2686a446cfe9/f254967c-6ef9-4cc6-b4bf-e89cf016337c_1-iOS-5.5-Home.png/392x696bb.png",
+                      "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource211/v4/6c/fc/57/6cfc57df-f4b7-5fb3-e8ff-5f6e558291b9/c795c58d-ec37-463c-9ab9-ba0b8bc00ddd_2-iOS-5.5-Reels.png/392x696bb.png"
+                    ],
+                    "ipadScreenshotUrls": [
+                      "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/2d/9e/e1/2d9ee1a8-ea20-1637-48ac-a0431e97b15e/3d69f402-0570-4aa0-b4ae-3b186d3098f3_iPad_Pro_12.9_2nd_Gen-Home.png/576x768bb.png"
+                    ]
+                  },
+                  "reviews": [
+                    {
+                      "id": "appstore_284882215_0",
+                      "rating": 1,
+                      "title": "Reels",
+                      "content": "Autoplay next video no longer working. Instead it just replays the same video. Please, fix.",
+                      "author": "Natie180",
+                      "date": "2025-08-30T04:29:12-07:00",
+                      "helpful_votes": 0,
+                      "app_id": "284882215"
+                    }
+                  ],
+                  "total_reviews": 1,
+                  "generated_at": "2025-08-31T18:45:19.245Z"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "Validation Error",
+                  "message": "app_id is required",
+                  "app_id": "",
+                  "timestamp": "2025-08-31T18:45:13.656Z"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+
+      "options": {
+        "summary": "CORS Preflight",
+        "description": "Handle CORS preflight requests",
+        "operationId": "optionsSingleAppReviews",
+        "tags": ["CORS"],
+        "responses": {
+          "200": {
+            "description": "CORS headers returned",
+            "headers": {
+              "Access-Control-Allow-Origin": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "*"
+              },
+              "Access-Control-Allow-Methods": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "GET, OPTIONS"
+              },
+              "Access-Control-Allow-Headers": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "Content-Type"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "HealthResponse": {
+        "type": "object",
+        "required": ["status", "timestamp", "service"],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["healthy"],
+            "description": "Health status of the API"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601 timestamp of the health check"
+          },
+          "service": {
+            "type": "string",
+            "description": "Name of the service"
+          }
+        }
+      },
+
+
+          "AppStoreApp": {
+      "type": "object",
+      "required": ["app_id", "name", "rating", "rating_count", "reviews_count", "url", "platform", "last_updated"],
+      "properties": {
+        "app_id": {
+          "type": "string",
+          "description": "App Store app ID"
+        },
+        "name": {
+          "type": "string",
+          "description": "App name"
+        },
+        "rating": {
+          "type": "number",
+          "format": "float",
+          "minimum": 0,
+          "maximum": 5,
+          "description": "Average user rating"
+        },
+        "rating_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of ratings"
+        },
+        "reviews_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of reviews"
+        },
+        "url": {
+          "type": "string",
+          "format": "uri",
+          "description": "App Store URL"
+        },
+        "platform": {
+          "type": "string",
+          "enum": ["app_store"],
+          "description": "Platform identifier"
+        },
+        "last_updated": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last update timestamp"
+        },
+        "screenshotUrls": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uri"
+          },
+          "description": "iPhone screenshot URLs from App Store"
+        },
+        "ipadScreenshotUrls": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uri"
+          },
+          "description": "iPad screenshot URLs from App Store"
+        }
+      }
+    },
+      "AppStoreReview": {
+        "type": "object",
+        "required": ["id", "rating", "title", "content", "author", "date", "app_id"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique review identifier"
+          },
+          "rating": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5,
+            "description": "User rating (1-5 stars)"
+          },
+          "title": {
+            "type": "string",
+            "description": "Review title"
+          },
+          "content": {
+            "type": "string",
+            "description": "Review content"
+          },
+          "author": {
+            "type": "string",
+            "description": "Review author name"
+          },
+          "date": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Review date"
+          },
+          "helpful_votes": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Number of helpful votes"
+          },
+          "app_id": {
+            "type": "string",
+            "description": "App Store app ID"
+          }
+        }
+      },
+      "ReviewsResponse": {
+        "type": "object",
+        "required": ["app_id", "reviews", "total_reviews", "generated_at"],
+        "properties": {
+          "app_id": {
+            "type": "string",
+            "description": "App Store app ID"
+          },
+          "app_metadata": {
+            "$ref": "#/components/schemas/AppStoreApp",
+            "description": "App metadata (included when include_metadata=true)"
+          },
+          "reviews": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AppStoreReview"
+            },
+            "description": "Array of reviews"
+          },
+          "total_reviews": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Total number of reviews returned"
+          },
+          "generated_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Response generation timestamp"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "required": ["error", "timestamp"],
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": "Error type"
+          },
+          "message": {
+            "type": "string",
+            "description": "Error message"
+          },
+          "app_id": {
+            "type": "string",
+            "description": "App ID that caused the error (if applicable)"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Error timestamp"
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Health",
+      "description": "Health check endpoints"
+    },
+    {
+      "name": "Reviews",
+      "description": "App Store reviews and ratings endpoints"
+    },
+    {
+      "name": "CORS",
+      "description": "CORS preflight endpoints"
+    }
+  ],
+  "externalDocs": {
+    "description": "Find more info about the API",
+    "url": "https://ios.reviews.aso.market"
+  }
+}

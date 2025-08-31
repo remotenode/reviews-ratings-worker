@@ -3,6 +3,9 @@ export interface Env {
   MAX_REVIEWS_PER_APP: string;
   REQUEST_TIMEOUT_MS: string;
   RATE_LIMIT_REQUESTS_PER_MINUTE: string;
+  ASO_MARKET_API_URL?: string;
+  CLOUDFLARE_API_TOKEN?: string;
+  CLOUDFLARE_ZONE_ID?: string;
 }
 
 export interface AppStoreApp {
@@ -14,6 +17,9 @@ export interface AppStoreApp {
   url: string;
   platform: 'app_store';
   last_updated: string;
+  screenshotUrls?: string[];
+  ipadScreenshotUrls?: string[];
+  appletvScreenshotUrls?: string[];
 }
 
 export interface AppStoreReview {
@@ -31,6 +37,7 @@ export interface ReviewsRequest {
   app_id: string;
   limit?: number;
   include_metadata?: boolean;
+  country?: string;
 }
 
 export interface ReviewsResponse {

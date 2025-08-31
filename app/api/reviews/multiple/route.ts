@@ -5,7 +5,7 @@ import { ReviewsHandler } from '../../../../src/handlers/reviews-handler';
 // Create environment configuration
 const env: Env = {
   ENVIRONMENT: process.env.ENVIRONMENT || 'development',
-  MAX_REVIEWS_PER_APP: process.env.MAX_REVIEWS_PER_APP || '10',
+  MAX_REVIEWS_PER_APP: process.env.MAX_REVIEWS_PER_APP || '200',
   REQUEST_TIMEOUT_MS: process.env.REQUEST_TIMEOUT_MS || '10000',
   RATE_LIMIT_REQUESTS_PER_MINUTE: process.env.RATE_LIMIT_REQUESTS_PER_MINUTE || '60'
 };

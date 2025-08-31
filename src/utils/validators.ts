@@ -5,7 +5,7 @@ export class Validators {
   }
 
   static isValidLimit(limit: number): boolean {
-    return Number.isInteger(limit) && limit > 0 && limit <= 50;
+    return Number.isInteger(limit) && limit > 0 && limit <= 200;
   }
 
   static validateReviewsRequest(data: any): { isValid: boolean; errors: string[] } {
@@ -18,7 +18,7 @@ export class Validators {
     }
 
     if (data.limit !== undefined && !this.isValidLimit(data.limit)) {
-      errors.push('limit must be a positive integer between 1 and 50');
+      errors.push('limit must be a positive integer between 1 and 200');
     }
 
     return {
@@ -45,7 +45,7 @@ export class Validators {
     }
 
     if (data.limit !== undefined && !this.isValidLimit(data.limit)) {
-      errors.push('limit must be a positive integer between 1 and 50');
+      errors.push('limit must be a positive integer between 1 and 200');
     }
 
     return {
@@ -58,7 +58,7 @@ export class Validators {
     return appId.trim();
   }
 
-  static sanitizeLimit(limit: number, maxLimit: number = 50): number {
+  static sanitizeLimit(limit: number, maxLimit: number = 200): number {
     return Math.min(Math.max(1, Math.floor(limit)), maxLimit);
   }
 }

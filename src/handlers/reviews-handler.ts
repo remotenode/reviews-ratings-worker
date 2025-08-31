@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Env, ReviewsRequest, ReviewsResponse, MultipleAppsRequest, MultipleAppsResponse, ErrorResponse } from '../types';
-import { AppStoreService } from '../services/app-store-service';
+import { ASOMarketService } from '../services/aso-market-service';
 import { Validators } from '../utils/validators';
 import { ErrorHandler } from '../utils/error-handler';
 import { Logger } from '../utils/logger';
 
 export class ReviewsHandler {
-  private appStoreService: AppStoreService;
+  private asoMarketService: ASOMarketService;
 
   constructor(private env: Env) {
-    this.appStoreService = new AppStoreService(env);
+    this.asoMarketService = new ASOMarketService(env);
   }
 
   /**
@@ -94,7 +94,7 @@ export class ReviewsHandler {
 
       if (requestData.include_metadata) {
         // Get both metadata and reviews
-        const { metadata, reviews } = await this.appStoreService.getAppWithReviews(appId, limit);
+        const { metadata, reviews } = await this.asoMarketService.getAppWithReviews(appId, limit);
         response = {
           app_id: appId,
           app_metadata: metadata,
@@ -104,7 +104,7 @@ export class ReviewsHandler {
         };
       } else {
         // Get only reviews
-        const reviews = await this.appStoreService.getReviews(appId, limit);
+        const reviews = await this.asoMarketService.getReviews(appId, limit);
         response = {
           app_id: appId,
           reviews,
@@ -154,7 +154,7 @@ export class ReviewsHandler {
         include_metadata: requestData.include_metadata 
       });
 
-      const results = await this.appStoreService.getMultipleAppsReviews(appIds, limit);
+      const results = await this.asoMarketService.getMultipleAppsReviews(appIds, limit);
 
       const apps: ReviewsResponse[] = appIds.map(appId => {
         const result = results[appId];
