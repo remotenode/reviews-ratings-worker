@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Env, ReviewsRequest, ReviewsResponse, MultipleAppsRequest, MultipleAppsResponse, ErrorResponse } from '../types';
+import { Env, ReviewsRequest, ReviewsResponse, ErrorResponse } from '../types';
 import { ASOMarketService } from '../services/aso-market-service';
 import { Validators } from '../utils/validators';
 import { ErrorHandler } from '../utils/error-handler';
@@ -48,18 +48,7 @@ export class ReviewsHandler {
     }
   }
 
-  /**
-   * Handle multiple apps reviews request
-   */
-  async handleMultipleAppsReviews(request: NextRequest): Promise<NextResponse> {
-    try {
-      const requestData = await request.json() as MultipleAppsRequest;
-      return await this.processMultipleAppsRequest(requestData);
-    } catch (error) {
-      const errorResponse = ErrorHandler.handleError(error, 'REVIEWS_HANDLER');
-      return NextResponse.json(errorResponse, { status: 500 });
-    }
-  }
+
 
   /**
    * Process single app request
@@ -126,66 +115,5 @@ export class ReviewsHandler {
     }
   }
 
-  /**
-   * Process multiple apps request
-   */
-  private async processMultipleAppsRequest(requestData: MultipleAppsRequest): Promise<NextResponse> {
-    // Validate request
-    const validation = Validators.validateMultipleAppsRequest(requestData);
-    if (!validation.isValid) {
-      const errorResponse: ErrorResponse = {
-        error: 'Validation Error',
-        message: validation.errors.join(', '),
-        timestamp: new Date().toISOString()
-      };
-      return NextResponse.json(errorResponse, { status: 400 });
-    }
 
-    // Sanitize inputs
-    const appIds = requestData.app_ids.map(Validators.sanitizeAppId);
-    const limit = requestData.limit ? 
-      Validators.sanitizeLimit(requestData.limit, parseInt(this.env.MAX_REVIEWS_PER_APP)) : 
-      parseInt(this.env.MAX_REVIEWS_PER_APP);
-
-    try {
-      Logger.info('Processing multiple apps reviews request', 'REVIEWS_HANDLER', { 
-        app_count: appIds.length, 
-        limit, 
-        include_metadata: requestData.include_metadata 
-      });
-
-      const results = await this.asoMarketService.getMultipleAppsReviews(appIds, limit);
-
-      const apps: ReviewsResponse[] = appIds.map(appId => {
-        const result = results[appId];
-        return {
-          app_id: appId,
-          app_metadata: requestData.include_metadata ? result.metadata : undefined,
-          reviews: result.reviews,
-          total_reviews: result.reviews.length,
-          generated_at: new Date().toISOString()
-        };
-      });
-
-      const successfulApps = apps.filter(app => app.reviews.length > 0).length;
-
-      const response: MultipleAppsResponse = {
-        apps,
-        total_apps: apps.length,
-        successful_apps: successfulApps,
-        generated_at: new Date().toISOString()
-      };
-
-      Logger.info('Successfully processed multiple apps reviews request', 'REVIEWS_HANDLER', { 
-        app_count: apps.length, 
-        successful: successfulApps 
-      });
-
-      return NextResponse.json(response);
-    } catch (error) {
-      Logger.error('Failed to process multiple apps reviews request', 'REVIEWS_HANDLER', { app_count: appIds.length }, error as Error);
-      const errorResponse = ErrorHandler.handleError(error, 'REVIEWS_HANDLER');
-      return NextResponse.json(errorResponse, { status: 500 });
-    }
-  }
 }

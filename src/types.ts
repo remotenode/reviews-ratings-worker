@@ -48,18 +48,7 @@ export interface ReviewsResponse {
   generated_at: string;
 }
 
-export interface MultipleAppsRequest {
-  app_ids: string[];
-  limit?: number;
-  include_metadata?: boolean;
-}
 
-export interface MultipleAppsResponse {
-  apps: ReviewsResponse[];
-  total_apps: number;
-  successful_apps: number;
-  generated_at: string;
-}
 
 export interface ErrorResponse {
   error: string;
